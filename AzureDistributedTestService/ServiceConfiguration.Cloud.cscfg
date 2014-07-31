@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ServiceConfiguration serviceName="AzureDistributedTestService" xmlns="http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceConfiguration" osFamily="4" osVersion="*" schemaVersion="2014-01.2.3">
+  <Role name="TestRequestProcessor">
+    <Instances count="3" />
+    <ConfigurationSettings>
+      <Setting name="ServiceRequestQueue" value="service-request-queue" />
+      <Setting name="StorageConnectionString" value="DefaultEndpointsProtocol=https;AccountName=youraccountname;AccountKey=yourstoragekey==" />
+      <Setting name="Microsoft.WindowsAzure.Plugins.Diagnostics.ConnectionString" value="DefaultEndpointsProtocol=https;AccountName=youraccountname;AccountKey=yourstoragekey==" />
+      <Setting name="MessagesPerRequest" value="1" />
+    </ConfigurationSettings>
+  </Role>
+  <Role name="TestRequestSubmitter">
+    <Instances count="2" />
+    <ConfigurationSettings>
+      <Setting name="ServiceRequestQueue" value="service-request-queue" />
+      <Setting name="StorageConnectionString" value="DefaultEndpointsProtocol=https;AccountName=youraccountname;AccountKey=yourstoragekey==" />
+      <Setting name="TPS" value="50" />
+      <Setting name="TotalTransactions" value="1000" />
+      <Setting name="ServiceUri" value="http://yourservicename.cloudapp.net" />
+      <Setting name="Microsoft.WindowsAzure.Plugins.Diagnostics.ConnectionString" value="DefaultEndpointsProtocol=https;AccountName=youraccountname;AccountKey=yourstoragekey==" />
+    </ConfigurationSettings>
+  </Role>
+  <Role name="TestServiceFrontEnd">
+    <Instances count="2" />
+    <ConfigurationSettings>
+      <Setting name="StorageConnectionString" value="DefaultEndpointsProtocol=https;AccountName=youraccountname;AccountKey=yourstoragekey==" />
+      <Setting name="ServiceRequestQueue" value="service-request-queue" />
+      <Setting name="WaitBetweenPollsMs" value="10" />
+      <Setting name="Microsoft.WindowsAzure.Plugins.Diagnostics.ConnectionString" value="DefaultEndpointsProtocol=https;AccountName=youraccountname;AccountKey=yourstoragekey==" />
+    </ConfigurationSettings>
+  </Role>
+</ServiceConfiguration>

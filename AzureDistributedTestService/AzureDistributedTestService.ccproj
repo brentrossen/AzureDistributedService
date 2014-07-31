@@ -1,0 +1,93 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>2.3</ProductVersion>
+    <ProjectGuid>db625fc5-1a10-4766-9678-c17708327e94</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>AzureDistributedTestService</RootNamespace>
+    <AssemblyName>AzureDistributedTestService</AssemblyName>
+    <StartDevelopmentStorage>True</StartDevelopmentStorage>
+    <Name>AzureDistributedTestService</Name>
+    <PackageEnableRemoteDebugger>False</PackageEnableRemoteDebugger>
+    <UseEmulatorExpressByDefault>False</UseEmulatorExpressByDefault>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <!-- Items for the project -->
+  <ItemGroup>
+    <ServiceDefinition Include="ServiceDefinition.csdef" />
+    <ServiceConfiguration Include="ServiceConfiguration.Local.cscfg" />
+    <ServiceConfiguration Include="ServiceConfiguration.Cloud.cscfg" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Profiles" />
+    <Folder Include="TestRequestProcessorContent\" />
+    <Folder Include="TestRequestSubmitterContent\" />
+    <Folder Include="TestServiceFrontEndContent\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="TestRequestProcessorContent\diagnostics.wadcfg">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="TestRequestSubmitterContent\diagnostics.wadcfg">
+      <SubType>Content</SubType>
+    </Content>
+    <Content Include="TestServiceFrontEndContent\diagnostics.wadcfg">
+      <SubType>Content</SubType>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <PublishProfile Include="Profiles\azuredistributedservice.azurePubxml" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TestRequestProcessor\TestRequestProcessor.csproj">
+      <Name>TestRequestProcessor</Name>
+      <Project>{cefd7116-265b-4626-8e6c-e40d4f1c2d2d}</Project>
+      <Private>True</Private>
+      <RoleType>Worker</RoleType>
+      <RoleName>TestRequestProcessor</RoleName>
+      <UpdateDiagnosticsConnectionStringOnPublish>True</UpdateDiagnosticsConnectionStringOnPublish>
+    </ProjectReference>
+    <ProjectReference Include="..\TestRequestSubmitter\TestRequestSubmitter.csproj">
+      <Name>TestRequestSubmitter</Name>
+      <Project>{b878026e-6a85-42b7-9056-99e255bbdbfb}</Project>
+      <Private>True</Private>
+      <RoleType>Worker</RoleType>
+      <RoleName>TestRequestSubmitter</RoleName>
+      <UpdateDiagnosticsConnectionStringOnPublish>True</UpdateDiagnosticsConnectionStringOnPublish>
+    </ProjectReference>
+    <ProjectReference Include="..\TestServiceFrontEnd\TestServiceFrontEnd.csproj">
+      <Name>TestServiceFrontEnd</Name>
+      <Project>{64f2a48a-9d7e-4a96-ad5d-8ee3e1a7d44b}</Project>
+      <Private>True</Private>
+      <RoleType>Web</RoleType>
+      <RoleName>TestServiceFrontEnd</RoleName>
+      <UpdateDiagnosticsConnectionStringOnPublish>True</UpdateDiagnosticsConnectionStringOnPublish>
+    </ProjectReference>
+  </ItemGroup>
+  <!-- Import the target files for this project template -->
+  <PropertyGroup>
+    <VisualStudioVersion Condition=" '$(VisualStudioVersion)' == '' ">10.0</VisualStudioVersion>
+    <CloudExtensionsDir Condition=" '$(CloudExtensionsDir)' == '' ">$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Windows Azure Tools\2.3\</CloudExtensionsDir>
+  </PropertyGroup>
+  <Import Project="$(CloudExtensionsDir)Microsoft.WindowsAzure.targets" />
+</Project>

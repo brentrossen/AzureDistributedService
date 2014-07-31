@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ServiceDefinition name="AzureDistributedTestService" xmlns="http://schemas.microsoft.com/ServiceHosting/2008/10/ServiceDefinition" schemaVersion="2014-01.2.3">
+  <WorkerRole name="TestRequestProcessor" vmsize="ExtraSmall">
+    <Imports>
+      <Import moduleName="Diagnostics" />
+    </Imports>
+    <ConfigurationSettings>
+      <Setting name="ServiceRequestQueue" />
+      <Setting name="StorageConnectionString" />
+      <Setting name="MessagesPerRequest" />
+    </ConfigurationSettings>
+  </WorkerRole>
+  <WorkerRole name="TestRequestSubmitter" vmsize="ExtraSmall">
+    <Imports>
+      <Import moduleName="Diagnostics" />
+    </Imports>
+    <ConfigurationSettings>
+      <Setting name="ServiceRequestQueue" />
+      <Setting name="StorageConnectionString" />
+      <Setting name="TPS" />
+      <Setting name="TotalTransactions" />
+      <Setting name="ServiceUri" />
+    </ConfigurationSettings>
+  </WorkerRole>
+  <WebRole name="TestServiceFrontEnd" vmsize="ExtraSmall">
+    <Sites>
+      <Site name="Web">
+        <Bindings>
+          <Binding name="Endpoint1" endpointName="Endpoint1" />
+        </Bindings>
+      </Site>
+    </Sites>
+    <Endpoints>
+      <InputEndpoint name="Endpoint1" protocol="http" port="80" />
+    </Endpoints>
+    <Imports>
+      <Import moduleName="Diagnostics" />
+    </Imports>
+    <ConfigurationSettings>
+      <Setting name="StorageConnectionString" />
+      <Setting name="ServiceRequestQueue" />
+      <Setting name="WaitBetweenPollsMs" />
+    </ConfigurationSettings>
+  </WebRole>
+</ServiceDefinition>
