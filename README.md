@@ -7,7 +7,11 @@ The AzureDistributedService library provides a framework for making remote proce
 
 This project includes a working Test setup with Front-End, Back-End, and Test Clients. Only the AzureDistributedService.dll is needed for use in an application.
 
-Start with examining the AzureDistributedServiceControlFlow.png for an explanation of the communication between the different roles. The three Cloud Service Roles should be deployed to your Microsoft Azure subscription. See http://azure.microsoft.com/en-us/documentation/articles/cloud-services-how-to-create-deploy/ for instructions. The Roles and console application settings should have the same ServiceRequestQueue name and StorageConnectionString. The Role settings can be modified using the property settings on each role and the console application settings in the app.config.
+Start with examining the below control flow image for an explanation of the communication between the different roles. 
+
+![Image of Azure Distributed Service Control flow](https://raw.githubusercontent.com/brentrossen/AzureDistributedService/master/AzureDistributedServiceControlFlow.png)
+
+The three Cloud Service Roles should be deployed to your Microsoft Azure subscription. See http://azure.microsoft.com/en-us/documentation/articles/cloud-services-how-to-create-deploy/ for instructions. The Roles and console application settings should have the same ServiceRequestQueue name and StorageConnectionString. The Role settings can be modified using the property settings on each role and the console application settings in the app.config.
 
 You can control the transactions per second (TPS) in the TestRequestSubmitter settings by adjusting the TPS and TotalTransactions settings. Expect to get around 3/5 of the target TPS due to delays in the request submitter sending requests and latency in request processing; the most important health metric is the latency per transaction since most applications won't normally have single clients sending hundreds of requests per second. You should also update the ServiceUri for WebAPI based requests to correspond to your service name, otherwise you'll get exceptions in the TestRequestSubmitter and console application.
 Once the settings are updated, you can deploy your Roles to Azure. They will immediately start sending requests and recording the resulting TPS and Avg Latency to the DistributedServiceTestResults table. Exceptions will be recorded to the DistributedServiceExceptions table. 
@@ -16,7 +20,9 @@ Once the Roles are running, you can start the console tests in debug mode to see
 
 ## Use Auto-Scale to Reduce Latency
 
-If your service is using the default TPS settings (50TPS webapi / 50TPS direct queue requests for each submitter), you might be seeing higher than expected avg latency (around 400ms-1.5sec). This is because more requests are being sent each second than the number of workers can handle. To alleviate this problem, turn on auto-scaling on the TestRequestProcessor worker roles. See AzureDistributedServiceAutoScaleSetup.png for example auto-scale settings. These settings can be updated on the scale tab in https://manage.windowsazure.com. After scaling up the number of worker VMs, you should see the avg request latency reduce to 40-140ms. The auto-scale task should start after five minutes and take less than 10 minutes to complete. 
+If your service is using the default TPS settings (50TPS webapi / 50TPS direct queue requests for each submitter), you might be seeing higher than expected avg latency (around 400ms-1.5sec). This is because more requests are being sent each second than the number of workers can handle. To alleviate this problem, turn on auto-scaling on the TestRequestProcessor worker roles. These settings can be updated on the scale tab in https://manage.windowsazure.com. After scaling up the number of worker VMs, you should see the avg request latency reduce to 40-140ms. The auto-scale task should start after five minutes and take less than 10 minutes to complete. See the below screenshot for example auto-scale settings. 
+
+![Image of example auto-scale settings](https://raw.githubusercontent.com/brentrossen/AzureDistributedService/master/AzureDistributedServiceAutoScaleSetup.png)
 
 It is also recommended to scale the FrontEnds based on CPU usage. The recommended setting is to keep the FrontEnds in the 20-30% CPU range, and scale up if the CPU is above 30%. Keeping the CPU relatively low allows the FrontEnds to handle sudden spikes in usage, and gives the system some buffer time to scale up.
 
