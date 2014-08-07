@@ -3,13 +3,73 @@ AzureDistributedService
 
 The AzureDistributedService library provides a framework for making remote procedure calls (RPC) from front-end clients (WebRoles/WebSites) to back-end VMs (WorkerRoles) using Azure Storage Queues. The system is easy to set-up and the calls look like simple RPC calls. The system internally uses .NET 4.5+ async-await pattern to allow even a pair Extra Small front-end VMs to handle hundreds of simultaneous requests. And because the front-end communicates with the back-end through an Azure Storage Queue, the worker VMs can be auto-scaled trivially using Azure's built in auto-scaling.
 
-# Getting Started -- Set-up the Test Cloud Service
+# Getting Started 
 
-This project includes a working Test setup with Front-End, Back-End, and Test Clients. Only the AzureDistributedService.dll is needed for use in an application.
+For the best development experience, use the NuGet package https://www.nuget.org/packages/AzureDistributedService/ for referencing the library.
 
 Start with examining the below control flow image for an explanation of the communication between the different roles. 
 
 ![Image of Azure Distributed Service Control flow](https://raw.githubusercontent.com/brentrossen/AzureDistributedService/master/AzureDistributedServiceControlFlow.png)
+
+## Setting Up Your Own AzureDistributedCloudService
+
+1. Define the TRequest and TResponse data structures based on the types of requests and responses your application uses.
+
+2. Your FrontEnd ServiceController should accept your custom TRequest and return a TResponse
+
+```
+	// Start your front-end
+	// serviceClient should be a singleton
+	var serviceClient = new ServiceClient<TRequest, TResponse>(
+			storageConnectionString,
+			new ServiceClientQueueNames
+			{
+				RequestQueueName = "service-request-queue",
+				ResponseQueueName = "front-end-1"
+			}, TimeSpan.FromSeconds(0.01));
+```
+
+```
+	// In your controller
+	return await serviceClient.SubmitRequestAsync(request, requestTimeout);
+```
+				
+3. Your ServiceWorker should accept your custom TRequest and return TResponse. The Func passed to your ServiceWorker will call your application code to do the actual work.
+
+```
+	// Start your worker
+	// serviceWorker should be a singleton
+	var serviceWorker = new ServiceWorker<TestRequest, TestResponse>(storageConnectionString, 
+                requestQueueName: "service-request-queue",
+                ProcessRequest)
+				{
+					MaxProcessingTimeout = TimeSpan.FromSeconds(30),
+					MessagesPerRequest = 1,
+					DelayWhenNothingInQueue = TimeSpan.FromMilliseconds(100),
+					DequeueCountPoisonMessageLimit = 5
+				};
+				
+	// Service worker will continue to process requests forever
+	// it should not return unless there is a thrown exception
+	await serviceWorker.ProcessRequestsAsync(); 
+```
+
+```
+	protected static Task<TResponse> ProcessRequest(TRequest request)
+	{
+		// Your code
+	}
+```
+
+4. Your clients should make web requests using a HttpClient (similar to how TestWebApiSubmitter does if calls are made from outside the DataCenter). If your clients run from within the DataCenter and each client makes many simultaneous requests, you should consider following the example in the TestServiceQueueSubmitter and have each client use a service client directly.
+
+5. Setup auto-scaling in the Azure Management Portal (see sample below)
+
+6. Deploy your Front-Ends and Worker Roles to Azure. Make calls from your clients. Enjoy your fast responses and massive scalability!
+
+# Set-up the Test Cloud Service
+
+This project includes a working Test setup with Front-End, Back-End, and Test Clients. Only the AzureDistributedService.dll is needed for use in an application. 
 
 The three Cloud Service Roles should be deployed to your Microsoft Azure subscription. See http://azure.microsoft.com/en-us/documentation/articles/cloud-services-how-to-create-deploy/ for instructions. The Roles and console application settings should have the same ServiceRequestQueue name and StorageConnectionString. The Role settings can be modified using the property settings on each role and the console application settings in the app.config.
 
@@ -32,13 +92,6 @@ It is also recommended to scale the FrontEnds based on CPU usage. The recommende
 - Requests Per Second: 120 (60 FE/60 direct to queue), scale up the number of TestRequestSubmitter instances to increase the requests per second.
 - Avg Latency WebAPI: 80-140ms
 - Avg Latency Direct Queue Requests: 40-80ms
-
-# Setting Up Your Own AzureDistributedCloudService
-
-1. Define the TRequest and TResponse data structures based on the types of requests and responses your application uses.
-2. Your FrontEnd ServiceController should accept TRequest and return a TResponse
-3. Your ServiceWorker should accept TRequest and return TResponse. The Func passed to your ServiceWorker will call your application code to do the actual work.
-4. Your client should make web requests similar to how TestWebApiSubmitter does (if calls are made from outside the DataCenter). If your clients run from within the DataCenter and each client makes many simultaneous requests, you should consider following the example in the TestServiceQueueSubmitter.
 
 ## The Test Set-up Cloud Service Roles
 
