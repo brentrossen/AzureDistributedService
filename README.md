@@ -13,59 +13,59 @@ Start with examining the below control flow image for an explanation of the comm
 
 ## Setting Up Your Own AzureDistributedCloudService
 
-1. Define the TRequest and TResponse data structures based on the types of requests and responses your application uses.
+1) Define the TRequest and TResponse data structures based on the types of requests and responses your application uses.
 
-2. Your FrontEnd ServiceController should accept your custom TRequest and return a TResponse
-
-```
-	// Start your front-end
-	// serviceClient should be a singleton
-	var serviceClient = new ServiceClient<TRequest, TResponse>(
-			storageConnectionString,
-			new ServiceClientQueueNames
-			{
-				RequestQueueName = "service-request-queue",
-				ResponseQueueName = "front-end-1"
-			}, TimeSpan.FromSeconds(0.01));
-```
+2) Your FrontEnd ServiceController should accept your custom TRequest and return a TResponse
 
 ```
-	// In your controller
-	return await serviceClient.SubmitRequestAsync(request, requestTimeout);
+// Start your front-end
+// serviceClient should be a singleton
+var serviceClient = new ServiceClient<TRequest, TResponse>(
+					storageConnectionString,
+					new ServiceClientQueueNames
+					{
+						RequestQueueName = "service-request-queue",
+						ResponseQueueName = "front-end-1"
+					}, TimeSpan.FromSeconds(0.01));
+```
+
+```
+// In your controller
+return await serviceClient.SubmitRequestAsync(request, requestTimeout);
 ```
 				
-3. Your ServiceWorker should accept your custom TRequest and return TResponse. The Func passed to your ServiceWorker will call your application code to do the actual work.
+3) Your ServiceWorker should accept your custom TRequest and return TResponse. The Func passed to your ServiceWorker will call your application code to do the actual work.
 
 ```
-	// Start your worker
-	// serviceWorker should be a singleton
-	var serviceWorker = new ServiceWorker<TestRequest, TestResponse>(storageConnectionString, 
-                requestQueueName: "service-request-queue",
-                ProcessRequest)
-				{
-					MaxProcessingTimeout = TimeSpan.FromSeconds(30),
-					MessagesPerRequest = 1,
-					DelayWhenNothingInQueue = TimeSpan.FromMilliseconds(100),
-					DequeueCountPoisonMessageLimit = 5
-				};
-				
-	// Service worker will continue to process requests forever
-	// it should not return unless there is a thrown exception
-	await serviceWorker.ProcessRequestsAsync(); 
+// Start your worker
+// serviceWorker should be a singleton
+var serviceWorker = new ServiceWorker<TestRequest, TestResponse>(storageConnectionString, 
+					requestQueueName: "service-request-queue",
+					ProcessRequest)
+					{
+						MaxProcessingTimeout = TimeSpan.FromSeconds(30),
+						MessagesPerRequest = 1,
+						DelayWhenNothingInQueue = TimeSpan.FromMilliseconds(100),
+						DequeueCountPoisonMessageLimit = 5
+					};
+			
+// Service worker will continue to process requests forever
+// it should not return unless there is a thrown exception
+await serviceWorker.ProcessRequestsAsync(); 
 ```
 
 ```
-	protected static Task<TResponse> ProcessRequest(TRequest request)
-	{
-		// Your code
-	}
+protected static Task<TResponse> ProcessRequest(TRequest request)
+{
+	// Your code
+}
 ```
 
-4. Your clients should make web requests using a HttpClient (similar to how TestWebApiSubmitter does if calls are made from outside the DataCenter). If your clients run from within the DataCenter and each client makes many simultaneous requests, you should consider following the example in the TestServiceQueueSubmitter and have each client use a service client directly.
+4) Your clients should make web requests using a HttpClient (similar to how TestWebApiSubmitter does if calls are made from outside the DataCenter). If your clients run from within the DataCenter and each client makes many simultaneous requests, you should consider following the example in the TestServiceQueueSubmitter and have each client use a service client directly.
 
-5. Setup auto-scaling in the Azure Management Portal (see sample below)
+5) Setup auto-scaling in the Azure Management Portal (see sample below)
 
-6. Deploy your Front-Ends and Worker Roles to Azure. Make calls from your clients. Enjoy your fast responses and massive scalability!
+6) Deploy your Front-Ends and Worker Roles to Azure. Make calls from your clients. Enjoy your fast responses and massive scalability!
 
 # Set-up the Test Cloud Service
 
