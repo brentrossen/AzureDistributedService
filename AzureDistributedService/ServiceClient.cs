@@ -6,6 +6,11 @@ using Newtonsoft.Json;
 
 namespace AzureDistributedService
 {
+    /// <summary>
+    /// Service client for communicating with a distributed set of <see cref="ServiceWorker{TRequest,TResponse}"/> workers
+    /// </summary>
+    /// <typeparam name="TRequest">The type of the request message</typeparam>
+    /// <typeparam name="TResponse">The type of the response message</typeparam>
     public class ServiceClient<TRequest, TResponse>
     {
         private readonly string responseQueueName;

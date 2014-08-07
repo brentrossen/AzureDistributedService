@@ -139,11 +139,9 @@ namespace AzureDistributedService
             foreach (var taskCompletionSource in completionSources)
             {
                 var timeoutAndCompletionSource = taskCompletionSource.Value;
-                if (timeoutAndCompletionSource.TimeoutDateTimeOffset < now)
-                {
-                    timeoutAndCompletionSource.TaskCompletionSource.TrySetException(new TimeoutException("Task timed out."));
-                    completionSourcesToRemove.Add(taskCompletionSource.Key);
-                }
+                if (timeoutAndCompletionSource.TimeoutDateTimeOffset >= now) continue;
+                timeoutAndCompletionSource.TaskCompletionSource.TrySetException(new TimeoutException("Task timed out."));
+                completionSourcesToRemove.Add(taskCompletionSource.Key);
             }
             foreach (var guid in completionSourcesToRemove)
             {

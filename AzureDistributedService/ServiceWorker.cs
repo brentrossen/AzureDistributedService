@@ -27,8 +27,8 @@ namespace AzureDistributedService
             = TimeSpan.FromMilliseconds(100);
 
         /// <summary>
-        /// Performs the actual work of processing a <see cref="TRequest"/> 
-        /// and creating a <see cref="TResponse"/>
+        /// Performs the actual work of processing a <typeparamref name="TRequest"/> 
+        /// and creating a <typeparamref name="TResponse"/>
         /// </summary>
         private readonly Func<TRequest, Task<TResponse>> processRequestFunc;
 

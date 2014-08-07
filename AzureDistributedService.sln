@@ -19,10 +19,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestServiceFrontEnd", "Test
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{338AA64E-8929-4ECA-8BD1-73CFCA56E8B8}"
 	ProjectSection(SolutionItems) = preProject
+		AzureDistributedService.nupkg = AzureDistributedService.nupkg
 		AzureDistributedServiceAutoScaleSetup.png = AzureDistributedServiceAutoScaleSetup.png
 		AzureDistributedServiceControlFlow.png = AzureDistributedServiceControlFlow.png
-		README.md = README.md
 		LICENSE = LICENSE
+		README.md = README.md
 	EndProjectSection
 EndProject
 Global
