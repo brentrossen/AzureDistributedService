@@ -80,17 +80,17 @@ Once the Roles are running, you can start the console tests in debug mode to see
 
 ## Use Auto-Scale to Reduce Latency
 
-If your service is using more than the default TPS settings (50TPS webapi / 50TPS direct queue requests for each submitter), you might be seeing higher than expected avg latency. This is because more requests are being sent each second than the number of workers can handle. To alleviate this problem, turn on auto-scaling on the TestRequestProcessor worker roles. These settings can be updated on the scale tab in https://manage.windowsazure.com. After scaling up the number of worker VMs, you should see the avg request latency reduce to 40-75ms. The auto-scale task should start after five minutes and take less than 10 minutes to complete. 
+If your service is using the default TPS settings (50TPS webapi / 50TPS direct queue requests for each submitter), you might be seeing higher than expected avg latency. This is because more requests are being sent each second than the number of workers can handle. To alleviate this problem, turn on auto-scaling on the TestRequestProcessor worker roles. These settings can be updated on the scale tab in https://manage.windowsazure.com. After scaling up the number of worker VMs, you should see the avg request latency reduce to 40-75ms. The auto-scale task should start after five minutes and take less than 10 minutes to complete. 
 
 See the below screenshot for example auto-scale settings. 
 
 ![Image of example auto-scale settings](https://raw.githubusercontent.com/brentrossen/AzureDistributedService/master/AzureDistributedServiceAutoScaleSetup.png)
 
-It is also recommended to scale the FrontEnds based on CPU usage. The recommended setting is to keep the FrontEnds in the 20-30% CPU range, and scale up if the CPU is above 30%. Keeping the CPU relatively low allows the FrontEnds to handle sudden spikes in usage, and gives the system some buffer time to scale up.
+It is also recommended to scale the FrontEnds based on CPU usage. The recommended setting is to keep the FrontEnds in the 30-40% CPU range - scale up if the CPU is above 40% and scale down if below 30%. Keeping the CPU relatively low allows the FrontEnds to handle sudden spikes in usage, and gives the system some buffer time to scale up.
 
-## Expected Performance with Test Setup
+## Expected Performance with Test Setup (with auto-scaling)
 
-- VMs: 2 Front-Ends (Extra Small) and 2-9 Workers (Extra Small)
+- VMs: 2-10 Front-Ends (Extra Small) and 2-20 Workers (Extra Small)
 - Requests Per Second: 120 (60 FE/60 direct to queue), scale up the number of TestRequestSubmitter instances to increase the requests per second.
 - Avg Latency WebAPI: 65-75ms
 - Avg Latency Direct Queue Requests: 40-60ms
@@ -104,16 +104,21 @@ This Role is a basic WebAPI WebRole. The Front-End has the single responsibility
 ### TestRequestProcessor Role
 
 This Role is a WorkerRole. It uses the AzureDistributedService.ServiceWorker class for communication. The worker receives requests from the ServiceRequestQueue through the ServiceWorker class, uses the application specific code to process the request, then places the result into the response queue for the front-end that sent the request.
+
 In the WorkerRole.cs entry point the TestWorker is started. The TestWorker initializes a ServiceWorker and passes it the ProcessRequest method for processing TestRequests. The ProcessRequest method is a simple example of application specific code that takes TestRequests and returns TestResponses. This method is where your application specific code would go.
+
 You can adjust the number of messages per request to cause the workers to process more messages at a time. These messages will still be processed sequentially, but will not require multiple queries against the service request queue. This can increase the usage of your workers and reduce the number of queue requests, but will also increase the request latency when the load is light. If you have a consistently heavily loaded system, increasing this number may help get more work done with fewer workers.
 
 You can also adjust the MaxProcessingTimeout. After this amount time requests will time out on the worker and be put back into the queue for another worker to process. Be careful with adjustments to this number. If you choose a number that is too low you may have requests that can never be processed because they always take longer than the timeout. If you choose a number that is too high you may have a worker holding a request for long periods, when the worker itself has an issue and is unable to process the request. It is important to test how long is acceptable for processing a request in your system.
+
 Last, you can adjust the DequeueCountLimit. This number indicates the number of times a request can be dequeued and attempted to be processed before it is considered a poison message and deleted. If it is deleted, the front-end will never get a response and will time out and return a TimeoutException to the client.
 
 ### TestRequestSubmitter Role/ConsoleApplication
 
 These are test classes that simulate a set of clients making rapid requests. There are two kinds of requests submitted: WebAPI and direct queue requests. 
+
 WebAPI requests are the recommended request type for clients that will be outside of Azure or in a different DataCenter than the AzureDistributedCloudService. This is recommended because it allows the FrontEnd Roles to handle many simultaneous requests and poll on the response queue to receive batches of responses. This keeps all polling action within the DataCenter for efficiency and to minimize bandwidth cost.
+
 The direct Queue Requests are recommended if you have clients that will be in the same DataCenter as the AzureDistributedCloudService and will be making many requests to the service. Calling the service request queue directly causes the client to act as both a client and a FrontEnd. It will submit a request or requests and then poll the queue for responses. This can save around 15ms in comparison to using the WebAPI, but is inefficient (and usually slower) if done from outside the DataCenter.
 
 ## Scalability of the AzureDistributedService (a polling system)
