@@ -1,7 +1,7 @@
 AzureDistributedService
 =======================
 
-The AzureDistributedService library provides a framework for making remote procedure calls (RPC) from front-end clients (WebRoles/WebSites) to back-end VMs (WorkerRoles) using Azure Storage Queues. The system is easy to set-up and the calls look like simple RPC calls. The system internally uses .NET 4.5+ async-await pattern to allow even a pair Extra Small front-end VMs to handle hundreds of simultaneous requests. And because the front-end communicates with the back-end through an Azure Storage Queue, the worker VMs can be auto-scaled trivially using Azure's built in auto-scaling.
+The AzureDistributedService library provides a framework for making remote procedure calls (RPC) from front-end clients (WebRoles/WebSites) to back-end VMs (WorkerRoles) using Azure Storage Queues. The system is easy to set-up and the calls look like simple RPC calls. The system internally uses .NET 4.5+ async-await pattern to allow even a pair of Extra Small front-end VMs to handle hundreds of simultaneous requests. And because the front-end communicates with the back-end through an Azure Storage Queue, the worker VMs can be auto-scaled trivially using Azure's built in auto-scaling.
 
 # Getting Started 
 
@@ -80,7 +80,9 @@ Once the Roles are running, you can start the console tests in debug mode to see
 
 ## Use Auto-Scale to Reduce Latency
 
-If your service is using the default TPS settings (50TPS webapi / 50TPS direct queue requests for each submitter), you might be seeing higher than expected avg latency (around 400ms-1.5sec). This is because more requests are being sent each second than the number of workers can handle. To alleviate this problem, turn on auto-scaling on the TestRequestProcessor worker roles. These settings can be updated on the scale tab in https://manage.windowsazure.com. After scaling up the number of worker VMs, you should see the avg request latency reduce to 40-140ms. The auto-scale task should start after five minutes and take less than 10 minutes to complete. See the below screenshot for example auto-scale settings. 
+If your service is using more than the default TPS settings (50TPS webapi / 50TPS direct queue requests for each submitter), you might be seeing higher than expected avg latency. This is because more requests are being sent each second than the number of workers can handle. To alleviate this problem, turn on auto-scaling on the TestRequestProcessor worker roles. These settings can be updated on the scale tab in https://manage.windowsazure.com. After scaling up the number of worker VMs, you should see the avg request latency reduce to 40-75ms. The auto-scale task should start after five minutes and take less than 10 minutes to complete. 
+
+See the below screenshot for example auto-scale settings. 
 
 ![Image of example auto-scale settings](https://raw.githubusercontent.com/brentrossen/AzureDistributedService/master/AzureDistributedServiceAutoScaleSetup.png)
 
@@ -90,8 +92,8 @@ It is also recommended to scale the FrontEnds based on CPU usage. The recommende
 
 - VMs: 2 Front-Ends (Extra Small) and 2-9 Workers (Extra Small)
 - Requests Per Second: 120 (60 FE/60 direct to queue), scale up the number of TestRequestSubmitter instances to increase the requests per second.
-- Avg Latency WebAPI: 80-140ms
-- Avg Latency Direct Queue Requests: 40-80ms
+- Avg Latency WebAPI: 65-75ms
+- Avg Latency Direct Queue Requests: 40-60ms
 
 ## The Test Set-up Cloud Service Roles
 
@@ -112,13 +114,13 @@ Last, you can adjust the DequeueCountLimit. This number indicates the number of 
 
 These are test classes that simulate a set of clients making rapid requests. There are two kinds of requests submitted: WebAPI and direct queue requests. 
 WebAPI requests are the recommended request type for clients that will be outside of Azure or in a different DataCenter than the AzureDistributedCloudService. This is recommended because it allows the FrontEnd Roles to handle many simultaneous requests and poll on the response queue to receive batches of responses. This keeps all polling action within the DataCenter for efficiency and to minimize bandwidth cost.
-The direct Queue Requests are recommended if you have clients that will be in the same DataCenter as the AzureDistributedCloudService and will be making many requests to the service. Calling the service request queue directly causes the client to act as both a client and a FrontEnd. It will submit a request or requests and then poll the queue for responses. This can save around 60ms in comparison to using the WebAPI, but is very inefficient (and usually slower) if done from outside the DataCenter.
+The direct Queue Requests are recommended if you have clients that will be in the same DataCenter as the AzureDistributedCloudService and will be making many requests to the service. Calling the service request queue directly causes the client to act as both a client and a FrontEnd. It will submit a request or requests and then poll the queue for responses. This can save around 15ms in comparison to using the WebAPI, but is inefficient (and usually slower) if done from outside the DataCenter.
 
 ## Scalability of the AzureDistributedService (a polling system)
 
 Nowadays polling is often considered anathema and is practically a curse word. However, an exception to this rule where polling is highly efficient is in a producer-consumer work-flow. The competing consumers pattern (http://msdn.microsoft.com/en-us/library/dn568101.aspx) allows work to be easily distributed among a set of workers.
 
-When built on top of Azure Storage Queues, polling becomes efficient and cheap. As of writing this readme, a single queue can serve 2000 requests per second and queue request costs $0.005 per 100,000 requests. A worker running at 10 requests per second will cost around $0.04 cents per day if constantly polling. With three workers polling 10 times per second it will rarely be more than 30ms before the first request is picked up for processing. And if the workers are consistently supplied with requests, they won't wait between requests and will start processing the next request immediately. This means with high worker utilization there will be little polling; the workers are always being fully utilized and completing the queued requests. With auto-scaling, the number of workers will be automatically adjusted so that they are always highly utilized. Auto-scale based on queue length is effective because the number of requests in the queue is an actual representation of the amount of work to be done. Compared to auto-scaling on CPU, Latency, Memory, or other metrics, queue based scaling is significantly more precise.
+When built on top of Azure Storage Queues, polling becomes efficient and cheap. As of writing this readme, a single queue can serve 2000 requests per second and queue request costs $0.005 per 100,000 requests (http://azure.microsoft.com/en-us/pricing/details/storage/). A worker running at 10 requests per second will cost around $0.04 cents per day if constantly polling. With three workers polling 10 times per second it will rarely be more than 30ms before the first request is picked up for processing. And if the workers are consistently supplied with requests, they won't wait between requests and will start processing the next request immediately. This means with high worker utilization there will be little polling; the workers are always being fully utilized and completing the queued requests. With auto-scaling, the number of workers will be automatically adjusted so that they are always highly utilized. Auto-scale based on queue length is effective because the number of requests in the queue is an actual representation of the amount of work to be done. Compared to auto-scaling on CPU, Latency, Memory, or other metrics, queue based scaling is significantly more precise.
 
 The AzureDistributedService adds to the competing consumers pattern by allowing responses to be sent back to the Front-End Roles in a simulated RPC style. RPC style programming is attractive because RPC calls look like local method calls, but most RPC solutions don't scale well because the Front-Ends need to "know" the workers. Managing the worker mapping can be a complex and often expensive task. This expense causes a low maximum ratio of Front-Ends to workers. With AzureDistributedService, the front-ends don't know the workers at all, which allows the workers to scale independently. This means that a small number of Front-Ends can provide work for a large number of back-end workers. This is effective because the Front-Ends can handle many more requests than the workers.
 
